@@ -11,7 +11,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Konfigurasi CORS agar frontend (index.html) bisa mengambil data dari API ini (connector between FE and BE)
+# (connector between FE and BE) Konfigurasi CORS agar frontend (index.html) bisa mengambil data dari API ini
 app.add.middleware(
     CORSMiddleware,
     allow_origins=[*],

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-widht, initial-scale=1.0">
+        <title> Travel Web - Explore & Custom Plan</title>
+        <link rel="stylesheet" href="style.css"
+    </head>
+    <body>
+    
+        <!-- NAVBAR DENGAN FITUR ANDALAN "+ MY PLAN" DI TENGAH -->
+         <header class="navbar">
+            <div class="logo"> ✈️Travel Web</div>
+            <nav>
+                <ul class="nav-links">
+                    <li>
+                        <a href="#destinations"> Destinasi</a>
+                    </li>
+                    <li class="nav-center">
+                        <a href="#custom-plan" class="btn-my-plan">
+                            <span class="plus-icon">+</span> My Plan
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#about"> Tentang</a> 
+                    </li>
+                </ul>
+            </nav>
+         </header>
+
+         <!-- HERO SECTION -->
+          <section class="Hero">
+            <h1> The Easiest Plan To Explore The World With Yourself </h1>
+            <p> Pilih destinasi impianmu dan buat estimasi biaya perjalananmu </p>
+          </section>
+          <!-- DAFTAR DESTINASI -->
+           <section id="destinations" class="destination-section">
+            <h2> Destinasi wisata pilihan </h2>
+            <div id="destinations-grid" class="grid-container"> 
+                <p class="loading-text"> Loading...</p>
+            </div>
+           </section>
+           <!-- CUSTOM PLAN SECTION -->
+            <section id="custom-plan" class="custom-plan-section"> 
+                <div class="plan-card"> 
+                    <h2>+ Custom Plan Your Destinantion </h2>
+                    <p> Calculate Your Destinantion </p>
+
+                    <form id="plan-form"> 
+                        <div class="form-group">
+                            <label for="dest-select"> Pilih Destinasi: </label>
+                            <select id="dest-select"> Required
+                                <option value=""> --Load Your Destinantion-- </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group"> 
+                            <label for="days-input"> Jumlah Hari Liburan: </label>
+                            <input type="number" id="budget-number" min="-0" placeholder="Example:700000">
+                        </div>
+
+                        <button type="submit" class="btn-submit-plan"> Calculating The Estimation </button>
+                    </form>
+
+                    <!-- The result of calcutaion budget -->
+                     <div id="plan-result" class="result-box-hidden"> </div>
+                </div>
+            </section>
+
+            <!-- JAVASCRIPT UNTUK MENGHUBUNGKAN HTML KE BACKEND FASTAPI -->
+             <script>
+                const=API_BASE_URL = "http://127.0.0.1:8000/api"
+
+                // 1. Mengambil semua data destinasi saat halaman dibuka
+                document.addEventListener(DOMContentLoaded), async() => {
+                    await fetchDestinantions(),
+                }
+                async function fetchDestinantions() {
+                    const gridContainer= document.getElementById("Destinations-grid");
+                    const destSelect= document.getElementById("dest-select");
+
+                    try {
+                        const response= await fetch ('${API_BASE_URL}/destinantons');
+                        const data= await response.json();
+
+                        // Kosongkan loading text
+                        gridContainer.innerHTML ="";
+                        destSelect.innerHTML = '<option value=""> --Choose your Destinantions-- </option>';
+
+                        // Tampilkan setiap destinasi ke dalam kartu & dropdown
+                        data.forEach(dest => {
+                            // Buat Kartu Destinasi
+                            const card= document.createElement("div");
+                            card.className= "dest-card";
+                            card.innerHTML= '
+                            <span class= "category-tag"> $ {dest.category} </span> 
+                            <h3> $ {dest.name} </h3>
+                            <p class= "location"> ${dest.location} </p>
+                            <p class= "desc"> ${description} </p>
+                            <div class= "card-footer"> 
+                                <span class= "price"> Rp ${dest.price_per_day.toLocaleString('id-ID')} / hari </span>
+                            </div>
+                            ';
+
+                            gridContainer.appendChild(card);
+                            // Tambahkan ke dropdown Custom Plan
+                            const option= document.createElement("Options");
+                            option.value = dest.id;
+                            option.textContent = '${dest.name}(Rp ${dest.price_per_day.toLocaleString('id-ID')}/hari)';
+                            destSelect.appendChild(option);
+
+                        });
+                    } catch (error) {
+                        gridContainer.innerHTML = '<p class="error-text"> Failed </p>';
+                        console.error("Error Fetching Destinantions:", error);
+                    }
+                }
+                //2. sending custom plan data to backend when from are submitted
+                document.getElementById("plan-form").addEventListener("submit", async (e) {
+                    e.preventDefault();
+
+                    const destinantionId = perseInt(document.getElementById("dest-select").value);
+                    const days = perseInt(document.getElementById("days-input").value);
+                    const budgetVal = perseInt(document.getElementById("budget-input").value);
+                    const budget = budgetVal ? perseInt(budgetVal) : null;
+
+                    const resultbox = document.getElementById("plan-result").value;
+                    try{
+                        const response = await fetch('{API_BASE_URL}/custom-plan',{
+                            method : "POST",
+                            header : {"Content-Type": "application/json"},
+                            body : JSON.stringify({
+                                destinantion_id : destinantionId,
+                                days : days,
+                                budget :budget,
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        //calculation result
+                        resultBox.classList.remove("hidden");
+                        const isOverBudget = result.budget_status === "Over Budget";
+
+                        resultBox.innerHTML ='
+                        <h4> Calculation Result </h4>
+                        <p><strong>Destinasi:</strong> ${result.destination}</p>
+                        <p><strong>Durasi:</strong> ${result.days} Hari</p>
+                        <p><strong>Estimasi Total Biaya:</strong> Rp ${result.estimated_total_cost.toLocaleString('id-ID')}</p>
+                        <p class="status-tag ${isOverBudget ? 'status-over' : 'status-ok'}">
+                        Status Budget: ${result.budget_status}
+                        </p>
+                        ';
+                    } catch (error) {
+                        alert("Failde. Please Check Your Connection");
+                    }
+                });
+             </script>
+    </body>
+</html>
